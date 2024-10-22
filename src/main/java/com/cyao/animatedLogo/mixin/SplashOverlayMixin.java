@@ -30,7 +30,7 @@ public class SplashOverlayMixin {
     @Unique
     private static final int IMAGE_PER_FRAME = 4;
     @Unique
-    private static final int FRAMES_PER_FRAME = 3;
+    private static final int FRAMES_PER_FRAME = 1;
     @Unique
     private float f = 0;
 
