@@ -1,10 +1,14 @@
 package com.cyao.animatedLogo.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.SplashOverlay;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.resource.ResourceReload;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,12 +19,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.function.IntSupplier;
+
+import static net.minecraft.util.math.ColorHelper.Abgr.withAlpha;
+
 @Mixin(SplashOverlay.class)
 public class SplashOverlayMixin {
     @Shadow @Final private ResourceReload reload;
     @Shadow private float progress;
     @Unique
-    private int count = 0;
+    private int count = 4;
     @Unique
     private Identifier[] frames;
     @Unique
@@ -30,9 +38,17 @@ public class SplashOverlayMixin {
     @Unique
     private static final int IMAGE_PER_FRAME = 4;
     @Unique
-    private static final int FRAMES_PER_FRAME = 3;
+    private static final int FRAMES_PER_FRAME = 4;
     @Unique
-    private float f = 0;
+    private float f = 4;
+    @Unique
+    private boolean fast = false;
+    @Unique
+    private static final int MOJANG_RED = ColorHelper.Argb.getArgb(255, 239, 50, 61);
+    @Unique
+    private static final int MONOCHROME_BLACK = ColorHelper.Argb.getArgb(255, 0, 0, 0);
+    @Unique
+    private static final IntSupplier BRAND_ARGB = () -> (Boolean) MinecraftClient.getInstance().options.getMonochromeLogo().getValue() ? MONOCHROME_BLACK : MOJANG_RED;
 
     @ModifyArg(method = "render",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIIIFFIIII)V", ordinal = 0),
@@ -79,28 +95,44 @@ public class SplashOverlayMixin {
             inited = true;
         }
 
-        float progress = MathHelper.clamp(this.progress * 0.95F + this.reload.getProgress() * 0.050000012F, 0.0F, 1.0F);
+        if (count == 4) {
+            fast = false;
+        }
 
+        float progress = MathHelper.clamp(this.progress * 0.95F + this.reload.getProgress() * 0.05F, 0.0F, 1.0F);
+
+        RenderSystem.disableBlend();
+        RenderSystem.defaultBlendFunc();
+        int i = context.getScaledWindowWidth();
+        int j = context.getScaledWindowHeight();
+        context.fill(RenderLayer.getGuiOverlay(), 0, 0, i, j, withAlpha((int) f, BRAND_ARGB.getAsInt()));
+
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(770, 1);
+
+        context.setShaderColor(1.0F, 1.0F, 1.0F, f);
         context.drawTexture(this.frames[count / IMAGE_PER_FRAME / FRAMES_PER_FRAME], x - halfWidth, y - halfHeight, (int) width, (int)height,
                 0, 256 * ((count % (IMAGE_PER_FRAME * FRAMES_PER_FRAME)) / FRAMES_PER_FRAME), 1024, 256, 1024, 1024);
 
         if (progress >= 0.8) {
             f = Math.min(alpha, f + 0.2f);
 
+            int sw = (int) (width*0.45);
             context.setShaderColor(1.0F, 1.0F, 1.0F, f);
-            context.drawTexture(Identifier.of("animated-logo", "textures/gui/studios.png"), x - halfWidth / 2, (int) (y - halfHeight + height), (int) (width / 2), (int) (height / 5),
-                    0, 0, 450, 50, 512, 512);
+            context.drawTexture(Identifier.of("animated-logo", "textures/gui/studios.png"), x - sw / 2, (int) (y - halfHeight + height - height/12),
+                    0, 0, sw, (int) (height / 5.0), 450, 50, 512, 512);
         }
 
-	// Uncomment to loop
-        if (/* progress <= 0.8 || */ count != FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME - 1) {
+        if (count != FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME - 1) {
             count++;
 
-	    /*
-            if (count >= FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME) {
-                count = 0;
+            if (fast || (progress >= 0.6 && count < (FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME) / 2)) {
+                // Increase speed
+                if (count != FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME - 1) {
+                    count++;
+                }
+                fast = true;
             }
-	    */
         }
     }
 }
