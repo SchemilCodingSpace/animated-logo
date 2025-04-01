@@ -32,11 +32,9 @@ public class SplashOverlayMixin {
     @Unique
     private static final int IMAGE_PER_FRAME = 4;
     @Unique
-    private static final int FRAMES_PER_FRAME = 2;
+    private static final int FRAMES_PER_FRAME = 3;
     @Unique
     private float f = 0;
-    @Unique
-    private boolean fast = false;
 
     @ModifyArg(method = "render",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V", ordinal = 0),
@@ -80,10 +78,6 @@ public class SplashOverlayMixin {
 
             inited = true;
         }
-	
-	if (count == 0) {
-		fast = false;
-	}
 
         float progress = MathHelper.clamp(this.progress * 0.95F + this.reload.getProgress() * 0.050000012F, 0.0F, 1.0F);
 
@@ -93,21 +87,19 @@ public class SplashOverlayMixin {
         if (progress >= 0.8) {
             f = Math.min(alpha, f + 0.2f);
 
-            int sw = (int) (width*0.45);
-            context.drawTexture(RenderLayer::getGuiTextured, Identifier.of("animated-logo", "textures/gui/studios.png"), x - sw / 2, (int) (y - halfHeight + height - height/12),
-                    0, 0, sw, (int) (height / 5.0), 450, 50, 512, 512, ColorHelper.getWhite(f));
+            context.drawTexture(RenderLayer::getGuiTextured, Identifier.of("animated-logo", "textures/gui/studios.png"), x - halfWidth / 2, (int) (y - halfHeight + height),
+                    0, 0, halfWidth, (int) (height / 5), 450, 50, 512, 512, ColorHelper.getWhite(f));
         }
 
-        if (count != FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME - 1) {
+	// Uncomment to loop
+        if (/* progress <= 0.8 || */ count != FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME - 1) {
             count++;
 
-            if (fast || (progress >= 0.6 && count < (FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME) / 2)) {
-                // Increase speed
-                if (count != FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME - 1) {
-                    count++;
-                }
-                fast = true;
+	    /*
+            if (count >= FRAMES * IMAGE_PER_FRAME * FRAMES_PER_FRAME) {
+                count = 0;
             }
+	    */
         }
     }
 }
