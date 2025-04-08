@@ -1,0 +1,8 @@
+{
+  "load": {
+    "subtitle": "sound.animated-logo.load",
+    "sounds": [
+      "animated-logo:load"
+    ]
+  }
+}

@@ -1,10 +1,14 @@
 package com.cyao.animatedLogo.mixin;
 
+import com.cyao.animatedLogo.AnimatedLogo;
 import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.SplashOverlay;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.resource.ResourceReload;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
@@ -79,6 +83,19 @@ public class SplashOverlayMixin {
             }
 
             inited = true;
+
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client != null && client.world != null) {
+                    client.world.playSound(
+                            /* x, y, z position to play from - choose center of screen or a fixed coordinate */
+                            null,
+                            0, 0, 0,
+                            AnimatedLogo.LOAD,            // Your registered sound event
+                            SoundCategory.MASTER,            // Sound category
+                            1.0F,                            // Volume
+                            1.0F                             // Pitch
+                    );
+            }
         }
 	
 	if (count == 0) {
